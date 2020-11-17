@@ -1,8 +1,8 @@
 {
-  "name": "zoom-clone",
+  "name": "face-to-face",
   "version": "1.0.0",
   "description": "Simple video chatting application built using NodeJS, Express, Web Sockets, Web RTC and Peer.js",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

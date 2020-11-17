@@ -1,64 +1,56 @@
-const socket = io('/');
-var peer = new Peer(undefined,{
-    path:'/peerjs',
-    host:'/',
-    port:'5000'
-}); 
-
-//create a DOM element of <video> that renders your video
-const myVideo=document.createElement('video')
-myVideo.muted=true; //keep the audio muted for that element 
-const videoGrid=document.getElementById('video-grid')
-let videoSteam; //variable for video stream
-navigator.mediaDevices.getUserMedia({ //access systems media devices
-    video:true,
-    audio:true
+const socket = io('/')
+const videoGrid = document.getElementById('video-grid')
+const myPeer = new Peer(undefined, {
+  host: '/',
+  port: '3001'
 })
-  .then(stream=>{
-      videoSteam=stream; //store the steam obtained
-      addVideoStream(myVideo,stream);
-      
-      peer.on('call',call=>{
-          console.log('here')
-          call.answer(stream);
-          const video=document.createElement('video')
-          call.on('stream',userVideoStream=>{
-              addVideoStream(video,userVideoStream)
-          })
-      })
-      socket.on('user-connected',(userId)=>{
-        setTimeout(function ()
-        {
-          connectToNewUser(userId, stream);
-        },5000)
-        //connectToNewUser(userId,stream);
+const myVideo = document.createElement('video')
+myVideo.muted = true
+const peers = {}
+navigator.mediaDevices.getUserMedia({
+  video: true,
+  audio: true
+}).then(stream => {
+  addVideoStream(myVideo, stream)
+
+  myPeer.on('call', call => {
+    call.answer(stream)
+    const video = document.createElement('video')
+    call.on('stream', userVideoStream => {
+      addVideoStream(video, userVideoStream)
     })
   })
-  .catch(err=>{
-      console.log(err)
+
+  socket.on('user-connected', userId => {
+    connectToNewUser(userId, stream)
   })
-
-
-peer.on('open',id=>{
-    //console.log('id: ',id)
-    socket.emit('join-room',room_id,id);
-
 })
 
+socket.on('user-disconnected', userId => {
+  if (peers[userId]) peers[userId].close()
+})
 
-const connectToNewUser=(userId,stream)=>{
-    //console.log('new user: ',userId)
-    const call=peer.call(userId,stream)
-    const video=document.createElement('video')
-    call.on('stream',userVideoStream=>{
-        addVideoStream(video,userVideoStream)
-    })
+myPeer.on('open', id => {
+  socket.emit('join-room', ROOM_ID, id)
+})
+
+function connectToNewUser(userId, stream) {
+  const call = myPeer.call(userId, stream)
+  const video = document.createElement('video')
+  call.on('stream', userVideoStream => {
+    addVideoStream(video, userVideoStream)
+  })
+  call.on('close', () => {
+    video.remove()
+  })
+
+  peers[userId] = call
 }
 
-const addVideoStream=(video,stream)=>{
-    video.srcObject=stream; //append steam to the source of that video element
-    video.addEventListener('loadedmetadata',()=>{
-        video.play();
-    })
-    videoGrid.append(video)
+function addVideoStream(video, stream) {
+  video.srcObject = stream
+  video.addEventListener('loadedmetadata', () => {
+    video.play()
+  })
+  videoGrid.append(video)
 }

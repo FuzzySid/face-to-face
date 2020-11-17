@@ -1,40 +1,29 @@
-const express=require('express');
-const app=express();
-const server=require('http').Server(app)
-const {v4:uuidv4}=require('uuid')
-const socket=require('socket.io')(server)
-const {ExpressPeerServer}=require('peer');
-const peerServer=ExpressPeerServer(server,{
-    debug:true
-})
+const express = require('express')
+const app = express()
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
+const { v4: uuidV4 } = require('uuid')
 
-//tell express where static files are
+app.set('view engine', 'ejs')
 app.use(express.static('public'))
-//set view engines as ejs
-app.set('view engine','ejs')
 
-
-//use peer
-app.use('/peerjs',peerServer);
-
-//root route to redirect to room route
-app.get('/',(req,res)=>{
-    res.redirect(`/${uuidv4()}`)
+app.get('/', (req, res) => {
+  res.redirect(`/${uuidV4()}`)
 })
 
-//render the ejs template
-app.get('/:room',(req,res)=>{
-    res.render('room',{roomId:req.params.room});
+app.get('/:room', (req, res) => {
+  res.render('room', { roomId: req.params.room })
 })
 
-socket.on('connection',websocket=>{
-    websocket.on('join-room',(roomId,userId)=>{
-        //console.log('Joined room')
-        websocket.join(roomId)
-        websocket.to(roomId).broadcast.emit('user-connected',userId);
+io.on('connection', socket => {
+  socket.on('join-room', (roomId, userId) => {
+    socket.join(roomId)
+    socket.to(roomId).broadcast.emit('user-connected', userId)
+
+    socket.on('disconnect', () => {
+      socket.to(roomId).broadcast.emit('user-disconnected', userId)
     })
+  })
 })
 
-server.listen(5000,()=>{
-    console.log('Listening on port 5000...')
-})
+server.listen(3000)

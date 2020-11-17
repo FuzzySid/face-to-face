@@ -4,7 +4,7 @@ const message= document.getElementById('chat_message');
 
 const myPeer = new Peer(undefined, {
   host: '/',
-  port: '3001'
+  port: '443'
 })
 const myVideo = document.createElement('video')
 myVideo.muted = false
